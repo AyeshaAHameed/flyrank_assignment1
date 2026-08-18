@@ -1,1 +1,2 @@
-PASTE-YOUR-DEPLOYED-PAPER-URL-HERE
+DEPLOYED-PAPER-URL
+https://ayeshaahameed.github.io/flyrank_assignment1/
