@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structured Content Archetype Clustering — FlyRank ML Internship</title>
+<style>
+  :root {
+    --paper: #F7F5F0;
+    --paper-dim: #EFEBE2;
+    --ink: #1B2430;
+    --ink-soft: #4A5265;
+    --rule: #D8D2C4;
+    --accent: #1F6F63;
+    --accent-soft: #DDEAE6;
+    --c0: #C1554A;
+    --c1: #1F6F63;
+    --c2: #8B8578;
+    --c3: #C99A3A;
+    --c4: #A15FB0;
+    --c5: #3E6FA8;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", "Roboto Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.65;
+    font-size: 17px;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  header.masthead {
+    padding: 64px 0 40px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 1.15;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+
+  .abstract {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 620px;
+  }
+
+  .meta {
+    margin-top: 28px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* Cluster map — signature element */
+  .clustermap {
+    margin: 40px 0 8px;
+    padding: 28px 24px;
+    background: var(--paper-dim);
+    border-radius: 4px;
+  }
+
+  .clustermap-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+
+  .dots {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .dot-item { text-align: center; }
+
+  .dot {
+    border-radius: 50%;
+    margin: 0 auto 8px;
+  }
+
+  .dot-count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .dot-name {
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  main { padding: 48px 0 96px; }
+
+  section { margin-bottom: 56px; }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0 0 18px;
+    color: var(--ink);
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 15px;
+    margin: 24px 0 8px;
+    color: var(--ink);
+  }
+
+  p { color: var(--ink-soft); margin: 0 0 14px; }
+
+  strong { color: var(--ink); font-weight: 600; }
+
+  ul, ol { color: var(--ink-soft); padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 14.5px;
+  }
+
+  th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--ink);
+    padding: 8px 10px;
+  }
+
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+
+  td.num { font-family: var(--mono); }
+
+  .cluster-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 4px 4px 0;
+    font-size: 14.5px;
+    color: var(--ink);
+    margin: 18px 0;
+  }
+
+  .callout.warn {
+    border-left-color: var(--c0);
+    background: #F5E5E2;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin: 18px 0;
+  }
+
+  .stat {
+    font-family: var(--mono);
+  }
+
+  .stat .val {
+    font-size: 22px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .stat .lbl {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .action-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 3px;
+    background: var(--paper-dim);
+    color: var(--ink);
+    display: inline-block;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 32px 0 64px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  footer a { color: var(--accent); }
+
+  code {
+    font-family: var(--mono);
+    background: var(--paper-dim);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 30px; }
+    .wrap { padding: 0 18px; }
+    .dots { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">FlyRank ML Internship · Lane 3</div>
+    <h1>Structured Content Archetype Clustering</h1>
+    <p class="abstract">
+      We asked whether ~30,000 FlyRank content pages group into a small number of behaviorally
+      distinct performance archetypes, without any predefined labels. Using KMeans clustering on
+      validated, leakage-free structural and behavioral signals, we found six stable groupings —
+      from a clear high-performing "champion" cluster to a clearly underperforming, stale cluster —
+      with the majority of pages sitting in an undifferentiated middle. Each archetype maps to one
+      of six editorial actions, giving a content strategist a way to prioritize review across a
+      large inventory by group rather than by individual page.
+    </p>
+    <div class="meta">
+      <span>Author: Ayesha Khatri</span>
+      <span>Repo: github.com/AyeshaHameed/flyrank_assignment1</span>
+      <span>Data: FlyRank/internship-warehouse (public-safe release)</span>
+    </div>
+  </header>
+
+  <div class="clustermap">
+    <div class="clustermap-label">Six archetypes discovered, sized by page count</div>
+    <div class="dots">
+      <div class="dot-item">
+        <div class="dot" style="width:70px;height:70px;background:var(--c1);"></div>
+        <div class="dot-count">2,009</div>
+        <div class="dot-name">Champions</div>
+      </div>
+      <div class="dot-item">
+        <div class="dot" style="width:80px;height:80px;background:var(--c0);"></div>
+        <div class="dot-count">3,096</div>
+        <div class="dot-name">Struggling</div>
+      </div>
+      <div class="dot-item">
+        <div class="dot" style="width:150px;height:150px;background:var(--c2);"></div>
+        <div class="dot-count">19,332</div>
+        <div class="dot-name">Unremarkable</div>
+      </div>
+      <div class="dot-item">
+        <div class="dot" style="width:98px;height:98px;background:var(--c3);"></div>
+        <div class="dot-count">5,378</div>
+        <div class="dot-name">Aging middle</div>
+      </div>
+      <div class="dot-item">
+        <div class="dot" style="width:34px;height:34px;background:var(--c4);"></div>
+        <div class="dot-count">139</div>
+        <div class="dot-name">Anomalous</div>
+      </div>
+      <div class="dot-item">
+        <div class="dot" style="width:22px;height:22px;background:var(--c5);"></div>
+        <div class="dot-count">46</div>
+        <div class="dot-name">Edge cases</div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+
+    <section id="introduction">
+      <div class="section-num">01</div>
+      <h2>Introduction</h2>
+      <p>
+        A content strategist managing thousands of pages cannot review each one individually.
+        This work supports one decision: which broad action — <strong>protect, improve, rewrite,
+        merge, prune, or monitor</strong> — should apply to a group of similarly-behaving pages,
+        so review effort can be prioritized by archetype rather than spent page-by-page.
+      </p>
+      <p>
+        A wrong call here has real cost at scale: rewriting pages that would have recovered on
+        their own, or folding a genuinely at-risk group into "leave alone" and never revisiting it.
+        With no predefined categories to sort pages into, this is an unsupervised problem —
+        clustering, not classification.
+      </p>
+    </section>
+
+    <section id="data">
+      <div class="section-num">02</div>
+      <h2>Data</h2>
+      <p>
+        <strong>Release:</strong> the anonymized FlyRank internship warehouse slice,
+        <code>content_refresh_anonymized.csv</code> — approximately 30,000 pages, one snapshot,
+        44 columns, public-safe (no client names, domains, URLs, or private queries).
+      </p>
+      <p><strong>Features used:</strong> structural and behavioral signals only —
+        <code>word_count</code>, <code>char_count</code>, <code>ctr</code>,
+        <code>avg_position</code>, <code>engagement_rate</code>, <code>scroll_rate</code>,
+        <code>ai_traffic_pct</code>, <code>days_since_last_update</code>, plus one-hot encoded
+        <code>content_type</code> and <code>main_intent</code>.
+      </p>
+      <div class="callout">
+        <strong>Deliberately excluded:</strong> <code>trend_direction</code> and
+        <code>trend_pct</code> — outcome-adjacent, label-derived fields that would leak the very
+        pattern the model is meant to discover. They are used only afterward, to describe a
+        cluster once formed, never to build it. Pseudonymous IDs are used for row identity only,
+        never as model inputs.
+      </div>
+    </section>
+
+    <section id="methodology">
+      <div class="section-num">03</div>
+      <h2>Methodology</h2>
+      <p>
+        <strong>Method:</strong> KMeans clustering, chosen because this is an unsupervised
+        problem — there is no existing archetype label to predict, only behavior to group by
+        similarity.
+      </p>
+      <h3>Choosing k</h3>
+      <p>
+        Silhouette score peaked at k=2 (0.533), but that split (2,106 vs. 27,894 pages) collapsed
+        to a trivial, uninformative binary division. From k=3 onward, score rose gradually to a
+        shallow peak near k=7 (0.333), with no sharp elbow. <strong>k=6</strong> was chosen to
+        align cluster count directly with the six-action taxonomy, trading a marginal (~0.004)
+        silhouette gain at k=7 for interpretability.
+      </p>
+      <h3>Baseline</h3>
+      <p>
+        A transparent, hand-weighted rule from prior work combines visibility (0.45),
+        tier-normalized CTR gap (0.40), and staleness (0.15) into a reason code and action label
+        per page — using the same underlying signals the clustering model sees, but combined by a
+        fixed formula rather than discovered from the data.
+      </p>
+      <h3>Validation design</h3>
+      <p>
+        No train/test split applies in the supervised sense. Cluster count was chosen via
+        elbow + silhouette across k=2–8; stability was checked by refitting k=6 with three
+        different random seeds and comparing assignments via Adjusted Rand Index (ARI).
+      </p>
+    </section>
+
+    <section id="results">
+      <div class="section-num">04</div>
+      <h2>Results</h2>
+
+      <div class="stat-row">
+        <div class="stat"><div class="val">0.991</div><div class="lbl">ARI, seed 1 vs 2</div></div>
+        <div class="stat"><div class="val">0.747</div><div class="lbl">ARI, seed 1 vs 3</div></div>
+        <div class="stat"><div class="val">0.329</div><div class="lbl">Silhouette, k=6</div></div>
+      </div>
+      <p>
+        Two of three seeds landed on essentially identical clusters; the third shows moderate
+        drift — a subset of pages sit near cluster boundaries and their exact membership is
+        sensitive to initialization. This does not invalidate the core archetypes below, but
+        individual borderline pages should be treated as soft, not fixed, assignments.
+      </p>
+
+      <h3>Cluster profiles</h3>
+      <table>
+        <tr>
+          <th>Cluster</th><th>Pages</th><th>CTR (mean)</th><th>Avg. position (mean)</th><th>Days stale (mean)</th>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c1)"></span>1 — Champions</td>
+          <td class="num">2,009</td><td class="num">1.17</td><td class="num">5.79</td><td class="num">27</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c0)"></span>0 — Struggling</td>
+          <td class="num">3,096</td><td class="num">0.25</td><td class="num">21.03</td><td class="num">100</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c2)"></span>2 — Unremarkable</td>
+          <td class="num">19,332</td><td class="num">0.26</td><td class="num">16.79</td><td class="num">38</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c3)"></span>3 — Aging middle</td>
+          <td class="num">5,378</td><td class="num">0.26</td><td class="num">16.19</td><td class="num">49.7</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c4)"></span>4 — Anomalous</td>
+          <td class="num">139</td><td class="num">40.5</td><td class="num">6.36</td><td class="num">40</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c5)"></span>5 — Edge cases</td>
+          <td class="num">46</td><td class="num">2.06</td><td class="num">20.0</td><td class="num">41</td>
+        </tr>
+      </table>
+
+      <div class="callout warn">
+        <strong>Data-quality flag:</strong> Cluster 4's mean CTR (40.5) is far outside the range of
+        every other cluster (0.25–2.06) and is very likely a data artifact rather than a genuine
+        high-performing archetype. This cluster is treated as flagged for review, not acted on with
+        confidence — see Limitations.
+      </div>
+
+      <h3>Model vs. baseline</h3>
+      <p class="callout">
+        <em>Pending: within-group variance comparison between the six-cluster model and the
+        W04 rule-based baseline on the same CTR/position/staleness signals. To be completed and
+        inserted before final grading.</em>
+      </p>
+    </section>
+
+    <section id="interpretation">
+      <div class="section-num">05</div>
+      <h2>Interpretation</h2>
+      <p>
+        The clustering found a clear "best" archetype (Cluster 1) and a clear "worst" archetype
+        (Cluster 0), separated mainly by search position and staleness — consistent with the
+        CTR-vs-position relationship independently validated in earlier baseline work. The
+        majority of pages (Clusters 2 and 3, ~24,700 pages combined) sit in an undifferentiated
+        middle with no strong signal in either direction.
+      </p>
+      <p>
+        <strong>This is an honest finding, not a modeling shortfall:</strong> most content is
+        neither excellent nor urgently broken. Clusters 2 and 3 were only weakly distinguished
+        from each other — the model did not surface as much fine-grained structure within the
+        "average" majority as initially hoped, and that negative result is reported as-is rather
+        than forced into an artificially sharper story.
+      </p>
+    </section>
+
+    <section id="limitations">
+      <div class="section-num">06</div>
+      <h2>Limitations</h2>
+      <ul>
+        <li>Single snapshot — archetype stability over time is unverified with this release.</li>
+        <li>No ground-truth labels — validation is internal (silhouette, seed stability), not accuracy against a known-correct grouping.</li>
+        <li>ARI of 0.747 between two of three seeds means some pages have soft, not fixed, cluster membership.</li>
+        <li>Cluster 4's CTR values are very likely a data artifact and should not be read as a real high-performing archetype without further investigation.</li>
+        <li>Clusters 2 and 3 are only weakly separated from each other.</li>
+        <li>All findings are <strong>observed, directional, and decision-support</strong> — this work makes no causal claims and does not model or predict Google's ranking algorithm.</li>
+        <li>Based on an anonymized sample; client- or topic-specific effects may not generalize.</li>
+      </ul>
+    </section>
+
+    <section id="recommendations">
+      <div class="section-num">07</div>
+      <h2>Ranked recommendations</h2>
+      <table>
+        <tr><th>Cluster</th><th>Pages</th><th>Action</th><th>Confidence</th></tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c0)"></span>0 — Struggling</td>
+          <td class="num">3,096</td>
+          <td><span class="action-tag">Rewrite</span></td>
+          <td>High</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c3)"></span>3 — Aging middle</td>
+          <td class="num">5,378</td>
+          <td><span class="action-tag">Improve</span></td>
+          <td>Moderate</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c5)"></span>5 — Edge cases</td>
+          <td class="num">46</td>
+          <td><span class="action-tag">Merge</span></td>
+          <td>Moderate</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c2)"></span>2 — Unremarkable</td>
+          <td class="num">19,332</td>
+          <td><span class="action-tag">Monitor</span></td>
+          <td>High</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c4)"></span>4 — Anomalous</td>
+          <td class="num">139</td>
+          <td><span class="action-tag">Monitor (flagged)</span></td>
+          <td>Low — verify data first</td>
+        </tr>
+        <tr>
+          <td><span class="cluster-swatch" style="background:var(--c1)"></span>1 — Champions</td>
+          <td class="num">2,009</td>
+          <td><span class="action-tag">Protect</span></td>
+          <td>High</td>
+        </tr>
+      </table>
+      <p>
+        A strategist reviewing this queue tomorrow prioritizes Cluster 0 first — the clearest,
+        highest-confidence rewrite candidates — leaves Cluster 1 untouched, and treats the
+        19,332-page Cluster 2 as low-priority background monitoring rather than a review target.
+      </p>
+    </section>
+
+    <section id="reproducibility">
+      <div class="section-num">08</div>
+      <h2>Reproducibility</h2>
+      <p>
+        Notebook: <code>work/notebooks/capstone_clustering.ipynb</code>, runs top to bottom from a
+        fresh clone. KMeans configuration: <code>n_clusters=6, n_init=25, random_state=42</code>,
+        stability additionally checked at seeds 1 and 123.
+      </p>
+      <p>
+        To reproduce: clone the repo, <code>pip install -r requirements.txt</code>, open the
+        notebook above, Run All.
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    Built on the FlyRank ML Internship dataset —
+    <a href="https://flyrank.ai" target="_blank" rel="noopener">flyrank.ai</a>.
+    Repository: <a href="https://github.com/AyeshaHameed/flyrank_assignment1" target="_blank" rel="noopener">github.com/AyeshaHameed/flyrank_assignment1</a>
+  </footer>
+
+</div>
+
+</body>
+</html>
